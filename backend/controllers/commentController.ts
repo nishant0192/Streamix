@@ -4,7 +4,7 @@ import { Users } from '../models/Users';
 import { Videos } from '../models/Videos';
 import { Comments } from '../models/Comments';
 import { AuthRequest } from "../utils/type";
-import { Channel } from '../models/Channels';
+import { Channels } from '../models/Channels';
 export const getComments = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { videoId } = req.body;
@@ -85,7 +85,7 @@ export const deleteComment = async (req: AuthRequest, res: Response, next: NextF
             })
             console.log(video)
             if (video) {
-                const videoAdmin = await Channel.findOne({
+                const videoAdmin = await Channels.findOne({
                     where: {
                         channelId: video.channelId
                     }

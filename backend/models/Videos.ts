@@ -1,6 +1,7 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
 import { Videos } from '../utils/modelTypes';
+import { Channels } from "./Channels"
 
 Videos.init({
     id: {
@@ -28,11 +29,16 @@ Videos.init({
     channelId: {
         type: DataTypes.STRING,
         allowNull: false,
+        references: {
+            model: Channels,
+            key: 'channelId',
+        },
+        onDelete: 'CASCADE',
     },
     videoPrivacy: {
-        type: DataTypes.ENUM('public', 'private', 'unlisted'),
-        defaultValue: "public",
+        type: DataTypes.STRING,
         allowNull: false,
+        defaultValue: 'public',
     },
     createdAt: {
         type: DataTypes.DATE,
@@ -46,7 +52,7 @@ Videos.init({
     },
 }, {
     sequelize,
-    modelName: 'Video',
+    modelName: 'Videos',
     tableName: 'Videos',
     timestamps: true,
 });

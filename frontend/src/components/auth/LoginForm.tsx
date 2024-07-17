@@ -2,16 +2,43 @@ import React, { useState, useEffect } from "react";
 import SkeletonLoader from "../common/SkeletonLoader";
 import axios from "axios";
 import Image from "next/image";
+import useCheckLoggedIn from "../../hooks/useCheckLoggedIn";
+import { useRouter } from "next/router";
 
 const LoginForm: React.FC = () => {
+  const { loading: checkLoading, isLoggedIn } = useCheckLoggedIn();
   const [loading, setLoading] = useState(true);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+  const [loggedInCheckComplete, setLoggedInCheckComplete] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
+    setLoading(true);
+    const timer = setTimeout(() => {
+      setLoading(checkLoading);
+      setLoggedInCheckComplete(true);
+    }, 2000);
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [checkLoading]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      const countdownTimer = setInterval(() => {
+        setCountdown((prevCountdown) => prevCountdown - 1);
+      }, 1000);
+
+      const redirectTimer = setTimeout(() => {
+        router.push("/");
+      }, 5000);
+
+      return () => {
+        clearInterval(countdownTimer);
+        clearTimeout(redirectTimer);
+      };
+    }
+  }, [isLoggedIn, router]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,20 +53,11 @@ const LoginForm: React.FC = () => {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
-        {
-          email,
-          password,
-        },
-        {
-          withCredentials: true, // Send cookies
-        }
+        { email, password },
+        { withCredentials: true }
       );
 
-      // Assuming your API responds with appropriate status codes
-      console.log("Login successful!", response.data);
       setApiError(null);
-
-      // Handle successful login, e.g., redirect or update state
     } catch (error) {
       console.error("Login error:", error);
       setApiError("Failed to login. Please try again.");
@@ -50,7 +68,7 @@ const LoginForm: React.FC = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  if (loading) {
+  if (loading || !loggedInCheckComplete) {
     return (
       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-14 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
@@ -76,6 +94,23 @@ const LoginForm: React.FC = () => {
 
           <p className="mt-10 text-center text-sm text-gray-500"></p>
           <SkeletonLoader height="8" width="40%" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoggedIn) {
+    return (
+      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+          <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
+            User is already logged in
+          </h2>
+          {countdown > 0 && (
+            <p className="mt-4 text-center text-lg text-gray-700">
+              Redirecting in {countdown}
+            </p>
+          )}
         </div>
       </div>
     );

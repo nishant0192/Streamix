@@ -34,11 +34,9 @@ Users.init({
     },
 }, {
     sequelize,
-    modelName: 'User',
-    tableName: 'users',
+    modelName: 'Users',
+    tableName: 'Users',
     timestamps: true,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
 });
 
 export { Users };

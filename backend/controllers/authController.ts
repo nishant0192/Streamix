@@ -1,14 +1,19 @@
-import { NextFunction, Request, Response } from 'express';
+// controllers/authController.ts
+
+import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import { Users } from '../models/Users';
-import { AuthRequest } from "../utils/type";
-import { generateToken } from '../utils/generateToken';
-import dotenv from "dotenv";
-dotenv.config();
+import { generateAccessToken, generateRefreshToken } from '../utils/generateToken';
+import { AuthRequest } from '../utils/type';
 
-export const registerUser = async (req: Request, res: Response) => {
+// Error handler function
+const handleError = (res: Response, statusCode: number, message: string) => {
+    console.error(message);
+    return res.status(statusCode).json({ message });
+};
+
+export const registerUser = async (req: AuthRequest, res: Response) => {
     try {
         const { username, email, password } = req.body;
         const errors = validationResult(req);
@@ -33,17 +38,21 @@ export const registerUser = async (req: Request, res: Response) => {
             passwordHash: hashedPassword,
         });
 
-        const token = generateToken(newUser.id);
-        res.cookie('authToken', token, { httpOnly: true });
+        const accessToken = generateAccessToken(newUser.id as unknown as number);
+        const refreshToken = generateRefreshToken(newUser.id as unknown as number);
 
-        return res.status(201).json({ userId: newUser.id });
+        // Set cookies with SameSite=None and Secure attributes
+        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+        res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+
+
+        return res.status(201).json({ accessToken, userId: newUser.id });
     } catch (error) {
-        console.error('Error in register:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return handleError(res, 500, 'Internal server error');
     }
 };
 
-export const loginUser = async (req: Request, res: Response) => {
+export const loginUser = async (req: AuthRequest, res: Response) => {
     try {
         const { email, password } = req.body;
         const errors = validationResult(req);
@@ -61,19 +70,21 @@ export const loginUser = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
-        const token = generateToken(user.id);
+        const accessToken = generateAccessToken(user.id as unknown as number);
+        const refreshToken = generateRefreshToken(user.id as unknown as number);
+
+        // Set cookies with SameSite=None and Secure attributes
+        res.cookie('refreshToken', refreshToken, { expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+        res.cookie('accessToken', accessToken, { expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
 
 
-        res.cookie('authToken', token, { httpOnly: true });
-
-        return res.json({ userId: user.id });
+        return res.json({ accessToken, userId: user.id });
     } catch (error) {
-        console.error('Error in login:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return handleError(res, 500, 'Internal server error');
     }
 };
 
-export const changePassword = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const changePassword = async (req: AuthRequest, res: Response) => {
     try {
         const { currentPassword, newPassword } = req.body;
         const errors = validationResult(req);
@@ -96,12 +107,23 @@ export const changePassword = async (req: AuthRequest, res: Response, next: Next
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         user.passwordHash = hashedNewPassword;
         await user.save();
-        const token = generateToken(user.id);
-        res.cookie('authToken', token, { httpOnly: true });
 
         res.status(200).json({ message: 'Password updated successfully' });
     } catch (error) {
-        console.error('Error changing password:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        return handleError(res, 500, 'Internal server error');
+    }
+};
+
+export const status = async (req: AuthRequest, res: Response) => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+
+        res.status(200).json({ message: 'User is logged in', userId: user.id });
+    } catch (error) {
+        return handleError(res, 500, 'Internal server error');
     }
 };

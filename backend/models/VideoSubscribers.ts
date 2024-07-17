@@ -1,31 +1,27 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
-
-class VideoSubscribers extends Model {
-    subscriberUserIds: any;
-}
+import { VideoSubscribers } from '../utils/modelTypes';
+import { Videos } from "./Videos"
 
 VideoSubscribers.init({
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
-        allowNull: false,
-        unique: true,
     },
     videoId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'Videos',
-            key: 'id'
+            model: Videos,
+            key: 'id',
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     },
     subscriberUserIds: {
         type: DataTypes.ARRAY(DataTypes.UUID),
         allowNull: false,
-        defaultValue: []
+        defaultValue: [],
     },
     createdAt: {
         type: DataTypes.DATE,

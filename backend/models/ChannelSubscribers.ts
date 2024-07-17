@@ -1,27 +1,27 @@
-import { Model, DataTypes, BIGINT } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
 import { ChannelSubscribers } from '../utils/modelTypes'
+import { Channels } from "./Channels"
 
 ChannelSubscribers.init({
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
-        allowNull: false,
     },
     channelId: {
-        type: DataTypes.STRING,
+        type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'channels',
-            key: 'channelId',
+            model: Channels,
+            key: 'id',
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     },
     subscriberUserIds: {
         type: DataTypes.ARRAY(DataTypes.UUID),
         allowNull: false,
-        defaultValue: []
+        defaultValue: [],
     },
     createdAt: {
         type: DataTypes.DATE,

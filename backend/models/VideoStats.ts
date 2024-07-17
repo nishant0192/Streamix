@@ -1,37 +1,42 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
-import { VideoStats } from '../utils/modelTypes';
+import { VideoStats } from '../utils/modelTypes'
+import { Videos } from "./Videos"
 
 VideoStats.init({
     videoId: {
-        type: DataTypes.STRING,
+        type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
-        unique: true,
+        references: {
+            model: Videos,
+            key: 'id',
+        },
+        onDelete: 'CASCADE',
     },
     views: {
         type: DataTypes.BIGINT,
-        defaultValue: BigInt(0),
+        defaultValue: 0,
         allowNull: false,
     },
     likes: {
         type: DataTypes.BIGINT,
-        defaultValue: BigInt(0),
+        defaultValue: 0,
         allowNull: false,
     },
     dislikes: {
         type: DataTypes.BIGINT,
-        defaultValue: BigInt(0),
+        defaultValue: 0,
         allowNull: false,
     },
     shares: {
         type: DataTypes.BIGINT,
-        defaultValue: BigInt(0),
+        defaultValue: 0,
         allowNull: false,
     },
     hoursWatched: {
         type: DataTypes.BIGINT,
-        defaultValue: BigInt(0),
+        defaultValue: 0,
         allowNull: false,
     },
     createdAt: {

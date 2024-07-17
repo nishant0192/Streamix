@@ -1,43 +1,48 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
 import { Likes } from '../utils/modelTypes'
+import { Videos } from "./Videos"
+import { Users } from "./Users"
 
 Likes.init({
     id: {
         type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
-        defaultValue: DataTypes.UUIDV4
     },
     videoId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'videos',
-            key: 'id'
+            model: Videos,
+            key: 'id',
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     },
     userId: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {
-            model: 'users',
-            key: 'id'
+            model: Users,
+            key: 'id',
         },
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
     },
     createdAt: {
         type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
     },
     updatedAt: {
         type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
-    }
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+    },
 }, {
     sequelize,
     modelName: 'Likes',
-    tableName: 'likes'
+    tableName: 'Likes',
+    timestamps: true,
 });
 
-export { Likes }
+export { Likes };

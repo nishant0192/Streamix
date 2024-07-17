@@ -43,7 +43,7 @@ const VideoRecorder: React.FC = () => {
           });
           const authToken = Cookies.get("authToken");
           const response = await axiosInstance.post(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/videos/record`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/record`,
             formData,
             {
               headers: {

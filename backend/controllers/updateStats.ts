@@ -6,7 +6,7 @@ dotenv.config();
 
 export const updateLike = async (videoId: string) => {
     try {
-        let video = await VideoStats.findOne({
+        let video: VideoStats | null = await VideoStats.findOne({
             where: {
                 videoId
             }
@@ -37,7 +37,7 @@ export const updateLike = async (videoId: string) => {
 
 export const updateunLike = async (videoId: string) => {
     try {
-        let video = await VideoStats.findOne({
+        let video: VideoStats | null = await VideoStats.findOne({
             where: {
                 videoId
             }
@@ -60,7 +60,7 @@ export const updateunLike = async (videoId: string) => {
 
 export const updateDislike = async (videoId: string) => {
     try {
-        let video = await VideoStats.findOne({
+        let video: VideoStats | null = await VideoStats.findOne({
             where: {
                 videoId
             }
@@ -91,7 +91,7 @@ export const updateDislike = async (videoId: string) => {
 
 export const updateunDislike = async (videoId: string) => {
     try {
-        let video = await VideoStats.findOne({
+        let video: VideoStats | null = await VideoStats.findOne({
             where: {
                 videoId
             }
@@ -122,37 +122,33 @@ export const updateSubs = async (videoId: string, channelId: string, user: { id:
         });
 
         if (channelSubs) {
-
             if (!channelSubs.subscriberUserIds.includes(user.id)) {
                 channelSubs.subscriberUserIds = [...channelSubs.subscriberUserIds, user.id];
                 await channelSubs.save();
                 console.log('Subscribers updated:', channelSubs);
             }
         } else {
-
             channelSubs = await ChannelSubscribers.create({
                 channelId,
                 subscriberUserIds: [user.id]
             });
             console.log('Subscriber added:', channelSubs);
         }
-        console.log("source", source)
-        if (source == 'videoId') {
+
+        if (source === 'videoId') {
             let videoSubs = await VideoSubscribers.findOne({
                 where: {
                     videoId,
                 }
             });
-            console.log("videoSubs", videoSubs)
-            if (videoSubs) {
 
+            if (videoSubs) {
                 if (!videoSubs.subscriberUserIds.includes(user.id)) {
                     videoSubs.subscriberUserIds = [...videoSubs.subscriberUserIds, user.id];
                     await videoSubs.save();
                     console.log('Video subscribers updated:', videoSubs);
                 }
             } else {
-
                 videoSubs = await VideoSubscribers.create({
                     videoId,
                     subscriberUserIds: [user.id]
@@ -179,9 +175,7 @@ export const updateUnsubs = async (videoId: string, channelId: string, user: { i
         });
 
         if (channelSubs) {
-
             channelSubs.subscriberUserIds = channelSubs.subscriberUserIds.filter((subscriberId: string) => subscriberId !== user.id);
-
 
             if (channelSubs.subscriberUserIds.length === 0) {
                 await channelSubs.destroy();
@@ -192,7 +186,7 @@ export const updateUnsubs = async (videoId: string, channelId: string, user: { i
             }
         }
 
-        // if (source === 'videoId') {
+        if (source === 'videoId') {
             let videoSubs = await VideoSubscribers.findOne({
                 where: {
                     videoId,
@@ -200,9 +194,7 @@ export const updateUnsubs = async (videoId: string, channelId: string, user: { i
             });
 
             if (videoSubs) {
-
                 videoSubs.subscriberUserIds = videoSubs.subscriberUserIds.filter((subscriberId: string) => subscriberId !== user.id);
-
 
                 if (videoSubs.subscriberUserIds.length === 0) {
                     await videoSubs.destroy();
@@ -212,7 +204,7 @@ export const updateUnsubs = async (videoId: string, channelId: string, user: { i
                     console.log('Video subscriber removed:', videoSubs);
                 }
             }
-        // }
+        }
 
         return channelSubs
             ? { ...channelSubs.toJSON(), subscriberUserIds: channelSubs.subscriberUserIds }

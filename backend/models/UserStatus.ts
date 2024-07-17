@@ -1,26 +1,12 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
-import { Comments } from '../utils/modelTypes'
-import { Videos } from "./Videos"
+import { UserStatus } from '../utils/modelTypes';
 import { Users } from "./Users"
 
-Comments.init({
-    id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-    },
-    videoId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-            model: Videos,
-            key: 'id',
-        },
-        onDelete: 'CASCADE',
-    },
+UserStatus.init({
     userId: {
         type: DataTypes.UUID,
+        primaryKey: true,
         allowNull: false,
         references: {
             model: Users,
@@ -28,9 +14,14 @@ Comments.init({
         },
         onDelete: 'CASCADE',
     },
-    content: {
-        type: DataTypes.TEXT,
+    status: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    lastLoginAt: {
+        type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW,
     },
     createdAt: {
         type: DataTypes.DATE,
@@ -44,9 +35,9 @@ Comments.init({
     },
 }, {
     sequelize,
-    modelName: 'Comments',
-    tableName: 'Comments',
+    modelName: 'UserStatus',
+    tableName: 'UserStatus',
     timestamps: true,
 });
 
-export { Comments };
+export { UserStatus };

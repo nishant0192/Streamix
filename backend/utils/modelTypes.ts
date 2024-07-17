@@ -1,17 +1,11 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
 
-export class Channel extends Model {
+export class Channels extends Model {
     public id!: string;
     public name!: string;
     public channelId!: string;
     public userId!: string;
-    public subscribers!: bigint;
-    public hoursWatched!: bigint;
-    public likes!: bigint;
-    public shares!: bigint;
-    public dislikes!: bigint;
-    public noOfVideos!: bigint;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
@@ -40,10 +34,11 @@ export class Comments extends Model {
     public id!: string;
     public videoId!: string;
     public userId!: string;
-    public content!: Text;
+    public content!: string;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }
+
 
 export class Dislikes extends Model {
     public id!: string;
@@ -78,7 +73,16 @@ export class Users extends Model {
     public readonly updatedAt!: Date;
 }
 
-export class VideoStats extends Model{
+export class UserStatus extends Model {
+    public userId!: string;
+    public status!: string | null;
+    public lastLoginAt!: Date;
+    public readonly createdAt!: Date;
+    public readonly updatedAt!: Date;
+}
+
+
+export class VideoStats extends Model {
     public videoId!: string;
     public views!: bigint;
     public likes!: bigint;
@@ -89,7 +93,7 @@ export class VideoStats extends Model{
     public readonly updatedAt!: Date;
 }
 
-export class VideoSubscribers extends Model{
+export class VideoSubscribers extends Model {
     public id!: string;
     public videoId!: string;
     public subscriberUserIds!: string[];
@@ -100,11 +104,21 @@ export class VideoSubscribers extends Model{
 export class Videos extends Model {
     public id!: string;
     public title!: string;
-    public description!: string;
+    public description!: string | null;
     public telegramFileId!: string;
     public extension!: string;
     public channelId!: string;
     public videoPrivacy!: string;
+    public readonly createdAt!: Date;
+    public readonly updatedAt!: Date;
+}
+
+export class VideoMetadata extends Model {
+    public id!: string;
+    public videoId!: string;
+    public views!: bigint;
+    public likes!: bigint;
+    public dislikes!: bigint;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
 }

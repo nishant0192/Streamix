@@ -1,4 +1,4 @@
-import { Channel } from "../models/Channels";
+import { Channels } from "../models/Channels";
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
@@ -20,8 +20,8 @@ export const createChannel = async (req: AuthRequest, res: Response, next: NextF
         if (!user) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
-        
-        const existingChannel = await Channel.findOne({
+
+        const existingChannel = await Channels.findOne({
             where: { userId: user.id }
         });
 
@@ -29,7 +29,7 @@ export const createChannel = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ message: 'User already has a channel' });
         }
 
-        const newChannel = await Channel.create({
+        const newChannel = await Channels.create({
             name,
             channelId: generateUniqueCode(),
             userId: user.id,
@@ -57,7 +57,7 @@ export const editChannel = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const existingChannel = await Channel.findOne({
+        const existingChannel = await Channels.findOne({
             where: {
                 userId: user.id,
                 channelId: channelId
@@ -94,7 +94,7 @@ export const deleteChannel = async (req: AuthRequest, res: Response, next: NextF
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const existingChannel = await Channel.findOne({
+        const existingChannel = await Channels.findOne({
             where: {
                 userId: user.id,
                 channelId: channelId

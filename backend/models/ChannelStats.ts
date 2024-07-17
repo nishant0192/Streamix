@@ -11,33 +11,33 @@ ChannelStats.init({
     },
     views: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     likes: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     dislikes: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     shares: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     hoursWatched: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     subscribers: {
         type: DataTypes.BIGINT,
-        defaultValue: 0,
-        allowNull: false
+        defaultValue: BigInt(0),
+        allowNull: false,
     },
     createdAt: {
         type: DataTypes.DATE,
@@ -52,7 +52,7 @@ ChannelStats.init({
 }, {
     sequelize,
     modelName: 'ChannelStats',
-    tableName: 'channelStats',
+    tableName: 'ChannelStats',
     timestamps: true,
 });
 

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
 import { Videos } from '../models/Videos';
-import { Channel } from '../models/Channels';
+import { Channels } from '../models/Channels';
 import { VideoStats } from '../models/VideoStats';
 import { ChannelStats } from '../models/ChannelStats';
 
@@ -51,7 +51,7 @@ export const share = async (req: AuthRequest, res: Response, next: NextFunction)
 
         // Handle sharing for channelId
         if (channelId) {
-            const channel = await Channel.findOne({
+            const channel = await Channels.findOne({
                 where: { channelId: channelId }
             });
 

@@ -1,10 +1,9 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/db';
-import { Comments } from '../utils/modelTypes'
+import { VideoMetadata } from '../utils/modelTypes'
 import { Videos } from "./Videos"
-import { Users } from "./Users"
 
-Comments.init({
+VideoMetadata.init({
     id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
@@ -19,17 +18,19 @@ Comments.init({
         },
         onDelete: 'CASCADE',
     },
-    userId: {
-        type: DataTypes.UUID,
+    views: {
+        type: DataTypes.BIGINT,
+        defaultValue: 0,
         allowNull: false,
-        references: {
-            model: Users,
-            key: 'id',
-        },
-        onDelete: 'CASCADE',
     },
-    content: {
-        type: DataTypes.TEXT,
+    likes: {
+        type: DataTypes.BIGINT,
+        defaultValue: 0,
+        allowNull: false,
+    },
+    dislikes: {
+        type: DataTypes.BIGINT,
+        defaultValue: 0,
         allowNull: false,
     },
     createdAt: {
@@ -44,9 +45,9 @@ Comments.init({
     },
 }, {
     sequelize,
-    modelName: 'Comments',
-    tableName: 'Comments',
+    modelName: 'VideoMetadata',
+    tableName: 'VideoMetadata',
     timestamps: true,
 });
 
-export { Comments };
+export { VideoMetadata };
