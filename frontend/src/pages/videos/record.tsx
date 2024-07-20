@@ -1,7 +1,7 @@
 import VideoRecorder from "@/components/videos/VideoRecorder";
 import React from "react";
 
-const LoginPage: React.FC = () => {
+const Recorder: React.FC = () => {
   return (
     <div>
       <VideoRecorder />
@@ -9,4 +9,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default Recorder;

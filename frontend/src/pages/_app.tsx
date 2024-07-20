@@ -1,12 +1,13 @@
-import "../styles/globals.css";
+import React from "react";
 import type { AppProps } from "next/app";
-import Layout from "../components/common/Layout";
+import { SidebarProvider } from "../context/SidebarContext";
+import '../styles/globals.css'
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <Layout>
+    <SidebarProvider>
       <Component {...pageProps} />
-    </Layout>
+    </SidebarProvider>
   );
 }
 

@@ -1,0 +1,39 @@
+.videoContainer {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+
+.videoList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.videoWrapper {
+  width: 100%;
+}
+
+@media (max-width: 1500px) {
+  .videoList {
+    grid-template-columns: repeat(auto-fill, minmax(24.33%, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .videoList {
+    grid-template-columns: repeat(auto-fill, minmax(40%, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .videoList {
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+  }
+}
+
+.p {
+  overflow-wrap: anywhere;
+  padding-left: 1rem;
+}

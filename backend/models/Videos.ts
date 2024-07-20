@@ -17,7 +17,7 @@ Videos.init({
         type: DataTypes.TEXT,
         allowNull: true,
     },
-    telegramFileId: {
+    fileId: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,

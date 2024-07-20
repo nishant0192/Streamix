@@ -105,7 +105,7 @@ export class Videos extends Model {
     public id!: string;
     public title!: string;
     public description!: string | null;
-    public telegramFileId!: string;
+    public fileId!: string;
     public extension!: string;
     public channelId!: string;
     public videoPrivacy!: string;
