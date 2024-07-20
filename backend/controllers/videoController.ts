@@ -91,12 +91,20 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
     }
 };
 
-const fetchVideos = (req: Request, res: Response) => {
+const fetchVideos = async (req: Request, res: Response) => {
     try {
-        const files: string[] = fs.readdirSync(recordingsDir);
-        const videos: string[] = files.map((file) => `${process.env.BACKEND_URL}/recordings/${file}`);
-        res.json({ videos });
-    } catch (error: any) {
+        const videos = await Videos.findAll({
+            attributes: ['id', 'title', 'extension'],
+        });
+
+        const formattedVideos = videos.map((video) => ({
+            id: video.id,
+            url: `${process.env.BACKEND_API}/recordings/${encodeURIComponent(video.title)}.${video.extension}`,
+            name: video.title,
+        }));
+
+        res.json({ videos: formattedVideos });
+    } catch (error) {
         console.error('Error fetching videos:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }

@@ -18,6 +18,10 @@ import verifyAccessToken from './middlewares/verifyAccessToken';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const recordingsDir = path.join(__dirname, 'recordings');
+
+app.use('/recordings', express.static(recordingsDir));
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

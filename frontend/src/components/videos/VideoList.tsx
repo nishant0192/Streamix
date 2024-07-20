@@ -20,7 +20,7 @@ const VideoList: React.FC = () => {
     const fetchVideos = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/videosInfo`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/videos`,
           {
             withCredentials: true,
           }
