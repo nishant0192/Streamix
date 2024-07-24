@@ -1,5 +1,4 @@
 import { Model, DataTypes } from 'sequelize';
-import { sequelize } from '../config/db';
 
 export class Channels extends Model {
     public id!: string;
@@ -111,6 +110,7 @@ export class Videos extends Model {
     public videoPrivacy!: string;
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+    public Channel?: Channels;
 }
 
 export class VideoMetadata extends Model {

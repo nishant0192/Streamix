@@ -3,9 +3,11 @@ import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
 import dotenv from "dotenv";
 import { updateDislike, updateunDislike, updateLike, updateunLike } from "./updateStats";
-import { Likes } from "../models/Likes";
-import { Dislikes } from "../models/Dislikes";
+import { PrismaClient } from '@prisma/client';
+
 dotenv.config();
+
+const prisma = new PrismaClient();
 
 export const dislike = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -21,42 +23,57 @@ export const dislike = async (req: AuthRequest, res: Response, next: NextFunctio
             return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        const existingLike = await Likes.findOne({
+        // Check if the user has already liked or disliked the video
+        const existingLike = await prisma.likes.findUnique({
             where: {
-                videoId,
-                userId: user.id
-            }
-        });
-
-        const existingDislike = await Dislikes.findOne({
-            where: {
-                videoId,
-                userId: user.id
-            }
-        });
-
-        if (existingLike) {
-            await Likes.destroy({
-                where: {
+                videoId_userId: {
                     videoId,
                     userId: user.id
+                }
+            }
+        });
+
+        const existingDislike = await prisma.dislikes.findUnique({
+            where: {
+                videoId_userId: {
+                    videoId,
+                    userId: user.id
+                }
+            }
+        });
+
+        // Remove the like if it exists
+        if (existingLike) {
+            await prisma.likes.delete({
+                where: {
+                    videoId_userId: {
+                        videoId,
+                        userId: user.id
+                    }
                 }
             });
             await updateunLike(videoId);
         }
 
+        // Add or remove dislike based on current status
         if (!existingDislike) {
-            await Dislikes.create({
-                videoId,
-                userId: user.id
+            // Add dislike
+            await prisma.dislikes.create({
+                data: {
+                    videoId,
+                    userId: user.id
+                }
             });
             const updatedVideo = await updateDislike(videoId);
             return res.status(201).json(updatedVideo);
         } else {
-            await Dislikes.destroy({
+            // Remove dislike
+            await prisma.dislikes.delete({
                 where: {
-                    videoId,
-                    userId: user.id
+                    videoId_userId: {
+                        videoId,
+                        userId: user.id
+                    }
                 }
             });
             const updatedVideo = await updateunDislike(videoId);
@@ -65,5 +82,8 @@ export const dislike = async (req: AuthRequest, res: Response, next: NextFunctio
     } catch (error) {
         console.error('Error in dislike:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        // Ensure the Prisma Client is disconnected after the operation
+        await prisma.$disconnect();
     }
 };

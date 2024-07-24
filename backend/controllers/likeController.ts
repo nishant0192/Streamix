@@ -2,10 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
 import dotenv from "dotenv";
+import { PrismaClient } from '@prisma/client';
 import { updateLike, updateunLike, updateDislike, updateunDislike } from "./updateStats";
-import { Likes } from "../models/Likes";
-import { Dislikes } from "../models/Dislikes";
+
 dotenv.config();
+
+const prisma = new PrismaClient();
 
 export const like = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -21,14 +23,14 @@ export const like = async (req: AuthRequest, res: Response, next: NextFunction) 
             return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        const existingLike = await Likes.findOne({
+        const existingDislike = await prisma.dislikes.findFirst({
             where: {
                 videoId,
                 userId: user.id
             }
         });
 
-        const existingDislike = await Dislikes.findOne({
+        const existingLike = await prisma.likes.findFirst({
             where: {
                 videoId,
                 userId: user.id
@@ -36,27 +38,27 @@ export const like = async (req: AuthRequest, res: Response, next: NextFunction) 
         });
 
         if (existingDislike) {
-            await Dislikes.destroy({
+            await prisma.dislikes.delete({
                 where: {
-                    videoId,
-                    userId: user.id
+                    id: existingDislike.id
                 }
             });
             await updateunDislike(videoId);
         }
 
         if (!existingLike) {
-            await Likes.create({
-                videoId,
-                userId: user.id
+            await prisma.likes.create({
+                data: {
+                    videoId,
+                    userId: user.id
+                }
             });
             const updatedVideo = await updateLike(videoId);
             return res.status(201).json(updatedVideo);
         } else {
-            await Likes.destroy({
+            await prisma.likes.delete({
                 where: {
-                    videoId,
-                    userId: user.id
+                    id: existingLike.id
                 }
             });
             const updatedVideo = await updateunLike(videoId);
@@ -65,5 +67,7 @@ export const like = async (req: AuthRequest, res: Response, next: NextFunction) 
     } catch (error) {
         console.error('Error in like:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        await prisma.$disconnect();
     }
 };

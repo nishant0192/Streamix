@@ -9,7 +9,7 @@ const MAX_TITLE_LENGTH = 52;
 interface Video {
   id: string;
   url: string;
-  name: string;
+  title: string;
 }
 
 const VideoList: React.FC = () => {
@@ -62,9 +62,9 @@ const VideoList: React.FC = () => {
                     <UserCircleIcon className="w-8 invert" />
                   </div>
                   <p className={`${styles.p} text-white`}>
-                    {video.name.length > MAX_TITLE_LENGTH
-                      ? `${video.name.slice(0, MAX_TITLE_LENGTH - 3)}...`
-                      : video.name}
+                    {video.title.length > MAX_TITLE_LENGTH
+                      ? `${video.title.slice(0, MAX_TITLE_LENGTH - 3)}...`
+                      : video.title}
                   </p>
                 </div>
               </div>

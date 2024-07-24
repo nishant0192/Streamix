@@ -1,23 +1,22 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from "../utils/type";
+import { AuthRequest } from '../utils/type';
 import dotenv from 'dotenv';
-import { sequelize } from '../config/db';
-import { Videos } from '../models/Videos';
-import { Channels } from '../models/Channels';
 import multer from 'multer';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import { PrismaClient } from '@prisma/client';
 
 dotenv.config();
 
+const prisma = new PrismaClient();
 const router = express.Router();
 const recordingsDir = path.join(__dirname, '..', 'recordings');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, '..', 'recordings'));
+        cb(null, recordingsDir);
     },
     filename: (req, file, cb) => {
         cb(null, file.originalname);
@@ -55,33 +54,31 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
                 .run();
         });
 
-        const channel = await Channels.findOne({
+        const channel = await prisma.channels.findUnique({
             where: {
                 userId: user.id,
-            }
-        })
+            },
+        });
 
-        const channelId = channel?.channelId;
+        if (!channel) {
+            return res.status(404).json({ error: 'Channel not found' });
+        }
+
+        const channelId = channel.channelId;
         const description = 'Description of the video';
         const videoPrivacy = 'unlisted';
 
-        const fileId = uuidv4(); // Generate UUID for fileId
+        const fileId = uuidv4();
 
-        const videoInfo = {
-            title: fileName,
-            extension: 'mp4',
-            fileId: fileId,
-            channelId,
-            description,
-            videoPrivacy,
-        };
-
-        await sequelize.transaction(async (transaction) => {
-            await Videos.create(videoInfo, { transaction });
-            await Channels.update(
-                { /* Update fields */ },
-                { where: { channelId }, transaction }
-            );
+        await prisma.videos.create({
+            data: {
+                title: fileName,
+                extension: 'mp4',
+                fileId: fileId,
+                channelId,
+                description,
+                videoPrivacy,
+            },
         });
 
         res.json({ videoURL: `${process.env.BACKEND_URL}/recordings/${fileName}.mp4` });
@@ -93,14 +90,28 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
 
 const fetchVideos = async (req: Request, res: Response) => {
     try {
-        const videos = await Videos.findAll({
-            attributes: ['id', 'title', 'extension'],
+        const videos = await prisma.videos.findMany({
+            select: {
+                id: true,
+                title: true,
+                extension: true,
+                createdAt: true,
+                Channel: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
         });
 
+        console.log(videos);
+
+        // Format the video data
         const formattedVideos = videos.map((video) => ({
             id: video.id,
             url: `${process.env.BACKEND_API}/recordings/${encodeURIComponent(video.title)}.${video.extension}`,
-            name: video.title,
+            title: video.title,
+            channelName: video.Channel?.name,
         }));
 
         res.json({ videos: formattedVideos });
@@ -112,8 +123,11 @@ const fetchVideos = async (req: Request, res: Response) => {
 
 const videosInfo = async (req: Request, res: Response) => {
     try {
-        const videos = await Videos.findAll({
-            attributes: ['fileId', 'title'],
+        const videos = await prisma.videos.findMany({
+            select: {
+                fileId: true,
+                title: true,
+            },
         });
 
         res.json({ videos });

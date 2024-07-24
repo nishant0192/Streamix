@@ -1,10 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
-import { Videos } from '../models/Videos';
-import { Channels } from '../models/Channels';
-import { VideoStats } from '../models/VideoStats';
-import { ChannelStats } from '../models/ChannelStats';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+type JsonObject = { [key: string]: any };
+
+const convertBigIntPropertiesToString = (obj: any): JsonObject => {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    if (Array.isArray(obj)) return obj.map(convertBigIntPropertiesToString);
+
+    return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [
+            key,
+            typeof value === 'bigint' ? value.toString() : convertBigIntPropertiesToString(value),
+        ])
+    );
+};
 
 export const share = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
@@ -17,7 +29,7 @@ export const share = async (req: AuthRequest, res: Response, next: NextFunction)
 
         // Handle sharing for videoId
         if (videoId) {
-            const video = await Videos.findOne({
+            const video = await prisma.videos.findUnique({
                 where: { id: videoId }
             });
 
@@ -25,33 +37,35 @@ export const share = async (req: AuthRequest, res: Response, next: NextFunction)
                 return res.status(404).json({ message: 'Video not found' });
             }
 
-            let videoStats = await VideoStats.findOne({
+            let videoStats = await prisma.videoStats.findUnique({
                 where: { videoId: videoId }
             });
 
             if (!videoStats) {
                 // Create new VideoStats if not found
-                videoStats = await VideoStats.create({
-                    videoId: videoId,
-                    shares: BigInt(1)
+                videoStats = await prisma.videoStats.create({
+                    data: {
+                        videoId: videoId,
+                        shares: BigInt(1)
+                    }
                 });
             } else {
                 // Update shares if VideoStats exists
-                videoStats.shares = videoStats.shares ? BigInt(videoStats.shares) + BigInt(1) : BigInt(1);
-                await videoStats.save();
+                videoStats = await prisma.videoStats.update({
+                    where: { videoId: videoId },
+                    data: {
+                        shares: BigInt(videoStats.shares) + BigInt(1)
+                    }
+                });
             }
 
-            const videoStatsJson = {
-                ...videoStats.toJSON(),
-                shares: videoStats.shares.toString()
-            };
-
+            const videoStatsJson = convertBigIntPropertiesToString(videoStats);
             return res.status(200).json(videoStatsJson);
         }
 
         // Handle sharing for channelId
         if (channelId) {
-            const channel = await Channels.findOne({
+            const channel = await prisma.channels.findUnique({
                 where: { channelId: channelId }
             });
 
@@ -59,27 +73,29 @@ export const share = async (req: AuthRequest, res: Response, next: NextFunction)
                 return res.status(404).json({ message: 'Channel not found' });
             }
 
-            let channelStats = await ChannelStats.findOne({
+            let channelStats = await prisma.channelStats.findUnique({
                 where: { channelId: channelId }
             });
 
             if (!channelStats) {
                 // Create new ChannelStats if not found
-                channelStats = await ChannelStats.create({
-                    channelId: channelId,
-                    shares: BigInt(1)
+                channelStats = await prisma.channelStats.create({
+                    data: {
+                        channelId: channelId,
+                        shares: BigInt(1)
+                    }
                 });
             } else {
                 // Update shares if ChannelStats exists
-                channelStats.shares = channelStats.shares ? BigInt(channelStats.shares) + BigInt(1) : BigInt(1);
-                await channelStats.save();
+                channelStats = await prisma.channelStats.update({
+                    where: { channelId: channelId },
+                    data: {
+                        shares: BigInt(channelStats.shares) + BigInt(1)
+                    }
+                });
             }
 
-            const channelStatsJson = {
-                ...channelStats.toJSON(),
-                shares: channelStats.shares.toString()
-            };
-
+            const channelStatsJson = convertBigIntPropertiesToString(channelStats);
             return res.status(200).json(channelStatsJson);
         }
 
@@ -88,5 +104,7 @@ export const share = async (req: AuthRequest, res: Response, next: NextFunction)
     } catch (error) {
         console.error('Error in share:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        await prisma.$disconnect();
     }
 };

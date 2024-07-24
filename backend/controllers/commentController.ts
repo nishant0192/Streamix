@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-import { Users } from '../models/Users';
-import { Videos } from '../models/Videos';
-import { Comments } from '../models/Comments';
-import { AuthRequest } from "../utils/type";
-import { Channels } from '../models/Channels';
+import { PrismaClient } from '@prisma/client';
+import { AuthRequest } from '../utils/type';
+
+const prisma = new PrismaClient();
+
 export const getComments = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { videoId } = req.body;
@@ -14,11 +14,11 @@ export const getComments = async (req: AuthRequest, res: Response, next: NextFun
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const videoComments = await Comments.findAll({
+        const videoComments = await prisma.comments.findMany({
             where: {
-                videoId: videoId
+                videoId: videoId,
             },
-        })
+        });
 
         return res.status(200).json(videoComments);
     } catch (error) {
@@ -40,12 +40,14 @@ export const addComment = async (req: AuthRequest, res: Response, next: NextFunc
         if (!user) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
-        console.log(content)
-        const videoComment = await Comments.create({
-            userId: user.id,
-            videoId,
-            content
-        })
+
+        const videoComment = await prisma.comments.create({
+            data: {
+                userId: user.id,
+                videoId,
+                content,
+            },
+        });
 
         return res.status(200).json(videoComment);
     } catch (error) {
@@ -53,6 +55,7 @@ export const addComment = async (req: AuthRequest, res: Response, next: NextFunc
         return res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 export const deleteComment = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const { videoId, commentId } = req.body;
@@ -67,37 +70,49 @@ export const deleteComment = async (req: AuthRequest, res: Response, next: NextF
             return res.status(401).json({ message: 'User not authenticated' });
         }
 
-        const videoComment = await Comments.findOne({
+        const videoComment = await prisma.comments.findUnique({
             where: {
-                id: commentId
-            }
-        })
-        console.log("hi", videoComment)
+                id: commentId,
+            },
+        });
+
         if (videoComment) {
             if (videoComment.userId === user.id) {
-
-                return res.status(200).json({ message: "Comment a" });
-            }
-            const video = await Videos.findOne({
-                where: {
-                    id: videoId
-                }
-            })
-            console.log(video)
-            if (video) {
-                const videoAdmin = await Channels.findOne({
+                // Allow the comment owner to delete their comment
+                await prisma.comments.delete({
                     where: {
-                        channelId: video.channelId
-                    }
-                })
-                console.log(videoAdmin)
+                        id: commentId,
+                    },
+                });
+                return res.status(200).json({ message: "Comment deleted successfully" });
+            }
+
+            const video = await prisma.videos.findUnique({
+                where: {
+                    id: videoId,
+                },
+            });
+
+            if (video) {
+                const videoAdmin = await prisma.channels.findUnique({
+                    where: {
+                        channelId: video.channelId,
+                    },
+                });
+
                 if (videoAdmin && user.id === videoAdmin.userId) {
-                    return res.status(200).json({ message: "Comment Deleted By Admin" });
+                    // Allow the channel admin to delete any comment
+                    await prisma.comments.delete({
+                        where: {
+                            id: commentId,
+                        },
+                    });
+                    return res.status(200).json({ message: "Comment deleted by admin" });
                 }
             }
         }
 
-        return res.status(200).json({ message: "Can't Delete this comment" });
+        return res.status(403).json({ message: "Can't delete this comment" });
     } catch (error) {
         console.error('Error in comments:', error);
         return res.status(500).json({ message: 'Internal server error' });

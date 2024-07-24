@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Channels {
+  id                 String              @id @default(uuid())
+  name               String
+  channelId          String              @unique
+  userId             String              @unique
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+  ChannelStats       ChannelStats?
+  ChannelSubscribers ChannelSubscribers?
+  User               Users               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Videos             Videos[]
+}
+
+model ChannelStats {
+  channelId    String   @id
+  views        BigInt   @default(0)
+  likes        BigInt   @default(0)
+  dislikes     BigInt   @default(0)
+  shares       BigInt   @default(0)
+  hoursWatched BigInt   @default(0)
+  subscribers  BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  Channel      Channels @relation(fields: [channelId], references: [channelId])
+}
+
+model ChannelSubscribers {
+  id                String   @id @default(uuid())
+  channelId         String @unique
+  subscriberUserIds String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  Channel           Channels @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
+  Users             Users[]  @relation("ChannelSubscribersToUsers")
+}
+
+model Comments {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  User      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Video     Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model Likes {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  User      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Video     Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+}
+
+model Dislikes {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  User      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Video     Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, userId])
+}
+
+model Shares {
+  id        String   @id @default(uuid())
+  videoId   String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  User      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Video     Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+}
+
+model Users {
+  id                 String               @id @default(uuid())
+  username           String               @unique
+  email              String               @unique
+  passwordHash       String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @default(now()) @updatedAt
+  Channels           Channels?
+  Comments           Comments[]
+  Dislikes           Dislikes[]
+  Likes              Likes[]
+  Shares             Shares[]
+  UserStatus         UserStatus?
+  ChannelSubscribers ChannelSubscribers[] @relation("ChannelSubscribersToUsers")
+  VideoSubscribers   VideoSubscribers[]   @relation("UsersToVideoSubscribers")
+}
+
+model UserStatus {
+  userId      String   @id
+  status      String?
+  lastLoginAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  User        Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VideoMetadata {
+  id        String   @id @default(uuid())
+  videoId   String   @unique
+  views     BigInt   @default(0)
+  likes     BigInt   @default(0)
+  dislikes  BigInt   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  Video     Videos   @relation(fields: [videoId], references: [id])
+}
+
+model Videos {
+  id               String            @id @default(uuid())
+  title            String
+  description      String?
+  fileId           String            @unique
+  extension        String
+  channelId        String
+  videoPrivacy     String            @default("public")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now()) @updatedAt
+  Comments         Comments[]
+  Dislikes         Dislikes[]
+  Likes            Likes[]
+  Shares           Shares[]
+  VideoMetadata    VideoMetadata?
+  VideoStats       VideoStats?
+  VideoSubscribers VideoSubscribers?
+  Channel          Channels          @relation(fields: [channelId], references: [channelId])
+}
+
+model VideoStats {
+  videoId      String   @id
+  views        BigInt   @default(0)
+  likes        BigInt   @default(0)
+  dislikes     BigInt   @default(0)
+  shares       BigInt   @default(0)
+  hoursWatched BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  Video        Videos   @relation(fields: [videoId], references: [id])
+}
+
+model VideoSubscribers {
+  id                String   @id @default(uuid())
+  videoId           String   @unique
+  subscriberUserIds String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  Video             Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  Users             Users[]  @relation("UsersToVideoSubscribers")
+}

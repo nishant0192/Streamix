@@ -22,7 +22,7 @@ const VideoRecorder: React.FC = () => {
         videoRef.current.srcObject = stream;
       }
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm; codecs=vp9",
+        mimeType: "video/mp4",
       });
       mediaRecorderRef.current = mediaRecorder;
 
@@ -32,7 +32,7 @@ const VideoRecorder: React.FC = () => {
       };
 
       mediaRecorder.onstop = async function () {
-        const blob = new Blob(chunks, { type: "video/webm" });
+        const blob = new Blob(chunks, { type: "video/mp4" });
         const formData = new FormData();
         formData.append("video", blob, `${fileName}.webm`);
         formData.append("fileName", fileName);

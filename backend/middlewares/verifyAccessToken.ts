@@ -1,13 +1,12 @@
-// middlewares/verifyAccessToken.ts
-
 import { Request, Response, NextFunction } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
-import { Users } from '../models/Users';
+import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../utils/type';
 
+const prisma = new PrismaClient();
+
 const verifyAccessToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    const token = req.cookies.accessToken; // Extract token from cookies
-    console.log(token)
+    const token = req.cookies.accessToken;
     if (!token) {
         return res.status(401).json({ message: 'No access token provided' });
     }
@@ -15,14 +14,13 @@ const verifyAccessToken = async (req: AuthRequest, res: Response, next: NextFunc
     try {
         const secretKey = process.env.ACCESS_TOKEN_SECRET as Secret;
         const decoded: any = jwt.verify(token, secretKey);
+        const user = await prisma.users.findUnique({
+            where: { id: decoded.userId },
+        });
 
-        // Verify if user exists in the database
-        const user = await Users.findByPk(decoded.userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-
-        // Attach user to request object
         req.user = user;
         next();
     } catch (error) {

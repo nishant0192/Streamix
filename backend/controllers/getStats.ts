@@ -1,23 +1,27 @@
-import { VideoStats } from '../models/VideoStats';
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { AuthRequest } from "../utils/type";
+import { PrismaClient } from '@prisma/client';
 import dotenv from "dotenv";
-import { updateLike } from "./updateStats";
-import { Likes } from "../models/Likes";
+
 dotenv.config();
 
-export const getVideoStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
+const prisma = new PrismaClient();
+
+export const getVideoStats = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { videoId } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
 
-        const videoStats = await VideoStats.findOne({ where: { videoId } });
+        const videoStats = await prisma.videoStats.findUnique({
+            where: { videoId }
+        });
 
         if (!videoStats) {
             return res.status(404).json({ message: 'Video stats not found' });
         }
-
-        // Convert likes from BigInt to string for JSON response
         const statsForResponse = {
             videoId: videoStats.videoId,
             views: videoStats.views.toString(),
@@ -25,13 +29,15 @@ export const getVideoStats = async (req: AuthRequest, res: Response, next: NextF
             dislikes: videoStats.dislikes.toString(),
             shares: videoStats.shares.toString(),
             hoursWatched: videoStats.hoursWatched.toString(),
-            createdAt: videoStats.createdAt,
-            updatedAt: videoStats.updatedAt
+            createdAt: videoStats.createdAt.toISOString(),
+            updatedAt: videoStats.updatedAt.toISOString()
         };
 
         return res.status(200).json(statsForResponse);
     } catch (error) {
         console.error('Error in getVideoStats:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    } finally {
+        await prisma.$disconnect();
     }
 };

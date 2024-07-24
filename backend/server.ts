@@ -1,10 +1,7 @@
-// server.ts
-
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import path from 'path';
-import cookieParser from 'cookie-parser'; // Import cookie-parser
-import { sequelize } from './config/db';
+import cookieParser from 'cookie-parser';
 import videoRoutes from './routes/videoRoutes';
 import streamRoutes from './routes/streamRoutes';
 import channelRoutes from './routes/channelRoutes';
@@ -47,16 +44,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     res.status(500).json({ message: 'Internal server error' });
 });
 
-sequelize.authenticate()
-    .then(() => {
-        console.log('Database connected...');
-        return sequelize.sync();
-    })
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
-    })
-    .catch((error) => {
-        console.error('Unable to connect to the database:', error);
-    });
+
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+})
