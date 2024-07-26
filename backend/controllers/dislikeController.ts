@@ -3,11 +3,9 @@ import { validationResult } from 'express-validator';
 import { AuthRequest } from "../utils/type";
 import dotenv from "dotenv";
 import { updateDislike, updateunDislike, updateLike, updateunLike } from "./updateStats";
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../config/db"
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 export const dislike = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

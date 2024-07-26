@@ -10,7 +10,7 @@ const useCheckLoggedIn = () => {
     const checkLoggedInStatus = async () => {
       try {
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/status`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/status`,
           {},
           {
             withCredentials: true,

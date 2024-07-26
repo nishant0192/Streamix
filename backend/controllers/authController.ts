@@ -1,16 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import { Request, Response } from 'express';
+import { prisma } from '../config/db';
+import { NextFunction, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { validationResult } from 'express-validator';
+import { serialize } from 'cookie';
 import { generateAccessToken, generateRefreshToken } from '../utils/generateToken';
 import { AuthRequest } from '../utils/type';
 import dotenv from 'dotenv';
+import { clearCookie, setCookie } from '../utils/cookies';
 
 dotenv.config();
 
-const prisma = new PrismaClient();
-
-// Error handler function
 const handleError = (res: Response, statusCode: number, message: string) => {
     console.error(message);
     return res.status(statusCode).json({ message });
@@ -25,7 +24,6 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        // Check if user with the provided email already exists
         let existingUser = await prisma.users.findUnique({
             where: { email },
         });
@@ -34,7 +32,6 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ message: 'User already exists with this email' });
         }
 
-        // Check if user with the provided username already exists
         existingUser = await prisma.users.findUnique({
             where: { username },
         });
@@ -45,7 +42,6 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create new user
         const newUser = await prisma.users.create({
             data: {
                 username,
@@ -57,9 +53,35 @@ export const registerUser = async (req: AuthRequest, res: Response) => {
         const accessToken = generateAccessToken(newUser.id as unknown as number);
         const refreshToken = generateRefreshToken(newUser.id as unknown as number);
 
-        // Set cookies with SameSite=None and Secure attributes
-        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
-        res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+        setCookie(res, 'refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+
+        setCookie(res, 'accessToken', accessToken, {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+
+        // Update or create user status
+        await prisma.userStatus.upsert({
+            where: { userId: newUser.id },
+            update: {
+                status: 'loggedIn',
+                lastLoginAt: new Date(),
+            },
+            create: {
+                userId: newUser.id,
+                status: 'loggedIn',
+                lastLoginAt: new Date(),
+            },
+        });
 
         return res.status(201).json({ accessToken, userId: newUser.id });
     } catch (error) {
@@ -93,15 +115,42 @@ export const loginUser = async (req: AuthRequest, res: Response) => {
         const accessToken = generateAccessToken(user.id as unknown as number);
         const refreshToken = generateRefreshToken(user.id as unknown as number);
 
-        // Set cookies with SameSite=None and Secure attributes
-        res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
-        res.cookie('accessToken', accessToken, { httpOnly: true, secure: true, sameSite: 'none', expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+        setCookie(res, 'refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+
+        setCookie(res, 'accessToken', accessToken, {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+
+        // Update user status
+        await prisma.userStatus.upsert({
+            where: { userId: user.id },
+            update: {
+                status: 'loggedIn',
+                lastLoginAt: new Date(),
+            },
+            create: {
+                userId: user.id,
+                status: 'loggedIn',
+                lastLoginAt: new Date(),
+            },
+        });
 
         return res.json({ accessToken, userId: user.id });
     } catch (error) {
         return handleError(res, 500, 'Internal server error');
     }
 };
+
 
 export const changePassword = async (req: AuthRequest, res: Response) => {
     try {
@@ -126,7 +175,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update the user's password
+
         await prisma.users.update({
             where: { id: user.id },
             data: { passwordHash: hashedNewPassword },
@@ -138,16 +187,41 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const status = async (req: AuthRequest, res: Response) => {
+
+export const logoutUser = async (req: AuthRequest, res: Response) => {
     try {
         const user = req.user;
 
         if (!user) {
-            return res.status(401).json({ message: 'User not authenticated' });
+            return res.status(401).json({ message: 'User not logged in' });
         }
 
-        return res.status(200).json({ message: 'User is logged in', userId: user.id });
+        clearCookie(res, 'accessToken', {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+        });
+
+        clearCookie(res, 'refreshToken', {
+            httpOnly: true,
+            secure: true,
+            path: '/',
+            sameSite: 'none',
+        });
+
+        // Update user status
+        await prisma.userStatus.update({
+            where: { userId: user.id },
+            data: {
+                status: 'loggedOut',
+            },
+        });
+
+        res.status(200).json({ message: 'Logout successful' });
     } catch (error) {
-        return handleError(res, 500, 'Internal server error');
+        console.error('Logout error:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
+

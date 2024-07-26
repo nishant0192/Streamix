@@ -1,32 +1,41 @@
+"use client";
 import React, { useState, useEffect } from "react";
-import SkeletonLoader from "../common/SkeletonLoader";
 import axios from "axios";
 import Image from "next/image";
-import useCheckLoggedIn from "../../hooks/useCheckLoggedIn";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { checkLoggedInStatus } from "../../features/authSlice";
+import toast from "react-hot-toast";
 
 const LoginForm: React.FC = () => {
-  const { loading: checkLoading, isLoggedIn } = useCheckLoggedIn();
-  const [loading, setLoading] = useState(true);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(5);
-  const [loggedInCheckComplete, setLoggedInCheckComplete] = useState(false);
+  const dispatch = useDispatch();
   const router = useRouter();
 
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(checkLoading);
-      setLoggedInCheckComplete(true);
-    }, 2000);
+  const { loading: checkLoading, isLoggedIn } = useSelector(
+    (state: RootState) => state.auth
+  );
 
-    return () => clearTimeout(timer);
-  }, [checkLoading]);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+  const [countdownActive, setCountdownActive] = useState(false);
+
+  useEffect(() => {
+    dispatch(checkLoggedInStatus() as any);
+  }, [dispatch]);
 
   useEffect(() => {
     if (isLoggedIn) {
+      toast.success("Login successful!");
+      setCountdownActive(true);
       const countdownTimer = setInterval(() => {
-        setCountdown((prevCountdown) => prevCountdown - 1);
+        setCountdown((prevCountdown) => {
+          if (prevCountdown <= 1) {
+            clearInterval(countdownTimer);
+            return 0;
+          }
+          return prevCountdown - 1;
+        });
       }, 1000);
 
       const redirectTimer = setTimeout(() => {
@@ -46,20 +55,20 @@ const LoginForm: React.FC = () => {
     const password = e.currentTarget.password.value;
 
     if (!isValidEmail(email)) {
-      alert("Please enter a valid email address.");
+      toast.error("Please enter a valid email address.");
       return;
     }
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
         { email, password },
         { withCredentials: true }
       );
-
+      toast.success("Login successful!");
       setApiError(null);
-    } catch (error) {
-      console.error("Login error:", error);
+      dispatch(checkLoggedInStatus() as any); // Trigger a status check
+    } catch (error: any) {
       setApiError("Failed to login. Please try again.");
     }
   };
@@ -68,48 +77,21 @@ const LoginForm: React.FC = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  if (loading || !loggedInCheckComplete) {
+  if (checkLoading) {
     return (
-      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-14 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <SkeletonLoader height="10" width="auto" />
-          <SkeletonLoader height="8" width="40%" />
-        </div>
-
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <SkeletonLoader height="2" width="100%" />
-          <form className="space-y-6 mt-6" onSubmit={handleLogin}>
-            <div>
-              <SkeletonLoader height="8" width="100%" />
-            </div>
-
-            <div>
-              <SkeletonLoader height="8" width="100%" />
-            </div>
-
-            <div>
-              <SkeletonLoader height="12" width="100%" />
-            </div>
-          </form>
-
-          <p className="mt-10 text-center text-sm text-gray-500"></p>
-          <SkeletonLoader height="8" width="40%" />
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-white">Loading...</div>
       </div>
     );
   }
 
   if (isLoggedIn) {
     return (
-      <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-            User is already logged in
-          </h2>
-          {countdown > 0 && (
-            <p className="mt-4 text-center text-lg text-gray-700">
-              Redirecting in {countdown}
-            </p>
+      <div className="flex min-h-screen items-center justify-center bg-black text-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">User is already logged in</h2>
+          {countdownActive && (
+            <p className="mt-4 text-lg">Redirecting in {countdown}</p>
           )}
         </div>
       </div>
@@ -117,8 +99,8 @@ const LoginForm: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-black px-6 py-12">
+      <div className="sm:w-full sm:max-w-sm text-white">
         <Image
           className="mx-auto h-10 w-auto mb-6"
           src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
@@ -126,17 +108,14 @@ const LoginForm: React.FC = () => {
           height={100}
           alt="Your Company"
         />
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
+        <h2 className="text-center text-2xl font-bold leading-9">
           Sign in to your account
         </h2>
-      </div>
-
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-        <form className="space-y-6" onSubmit={handleLogin}>
+        <form className="space-y-6 mt-10" onSubmit={handleLogin}>
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium leading-6 text-gray-900"
+              className="block text-sm font-medium leading-6"
             >
               Email address
             </label>
@@ -147,28 +126,18 @@ const LoginForm: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border-0 py-1.5 text-black shadow-sm ring-1 ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Password
-              </label>
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-semibold text-indigo-600 hover:text-indigo-500"
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium leading-6"
+            >
+              Password
+            </label>
             <div className="mt-2">
               <input
                 id="password"
@@ -176,7 +145,7 @@ const LoginForm: React.FC = () => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border-0 py-1.5 text-black shadow-sm ring-1 ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-600 sm:text-sm"
               />
             </div>
           </div>
@@ -184,7 +153,7 @@ const LoginForm: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
             >
               Sign in
             </button>
@@ -194,13 +163,13 @@ const LoginForm: React.FC = () => {
           </div>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-500">
+        <p className="mt-10 text-center text-sm">
           Not a member?{" "}
           <a
             href="#"
-            className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
+            className="font-semibold text-indigo-600 hover:text-indigo-500"
           >
-            Start a 14 day free trial
+            Start a 14-day free trial
           </a>
         </p>
       </div>

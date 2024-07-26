@@ -1,8 +1,9 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import styles from "../../styles/VideoList.module.css";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
 
 const MAX_TITLE_LENGTH = 52;
 
@@ -20,10 +21,7 @@ const VideoList: React.FC = () => {
     const fetchVideos = async () => {
       try {
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/videos`,
-          {
-            withCredentials: true,
-          }
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/videos`
         );
 
         const videosData: Video[] = response.data.videos;

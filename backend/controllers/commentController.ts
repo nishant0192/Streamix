@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../config/db"
 import { AuthRequest } from '../utils/type';
 
-const prisma = new PrismaClient();
 
 export const getComments = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

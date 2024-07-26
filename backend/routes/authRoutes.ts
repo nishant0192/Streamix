@@ -1,6 +1,6 @@
 // routes/authRoutes.ts
 import { Router } from 'express';
-import { registerUser, loginUser, changePassword, status } from '../controllers/authController';
+import { registerUser, loginUser, changePassword, logoutUser } from '../controllers/authController';
 import authMiddleware from '../middlewares/authMiddleware';
 import { body } from 'express-validator';
 
@@ -13,7 +13,7 @@ const validateChangePassword = [
 
 router.post('/register', registerUser);
 router.post('/login', loginUser);
-router.post('/status', authMiddleware, status);
+router.post('/logout', authMiddleware, logoutUser);
 router.put('/changePassword', authMiddleware, validateChangePassword, changePassword);
 
 export default router;

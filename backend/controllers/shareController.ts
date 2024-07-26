@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from "../utils/type";
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from "../config/db"
 
 type JsonObject = { [key: string]: any };
 

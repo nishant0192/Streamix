@@ -11,6 +11,7 @@ import dislikeRoutes from './routes/dislikeRoutes';
 import subscribersRoutes from './routes/subscribersRoutes';
 import shareRoutes from './routes/shareRoutes';
 import commentRoutes from './routes/commentRoutes';
+import userStatusRoutes from './routes/userStatusRoutes';
 import verifyAccessToken from './middlewares/verifyAccessToken';
 
 const app = express();
@@ -19,19 +20,20 @@ const recordingsDir = path.join(__dirname, 'recordings');
 
 app.use('/recordings', express.static(recordingsDir));
 
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(express.static(path.join(__dirname, '../videos')));
-app.use(cors({
-    origin: 'http://localhost:3000',
+const corsOptions = {
+    origin: ['http://localhost:3000', 'https://ecdf-49-43-27-140.ngrok-free.app'],
     credentials: true,
-}));
-app.use('/api/auth', authRoutes);
+};
 
-// Apply access token verification middleware to protected routes
-app.use('/api/videos', verifyAccessToken, videoRoutes);
+app.use(cors(corsOptions));
+
+app.use('/api/auth', authRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/user', userStatusRoutes);
 app.use('/api/stream', verifyAccessToken, streamRoutes);
 app.use('/api/channel', verifyAccessToken, channelRoutes);
 app.use('/api/stats', verifyAccessToken, likeRoutes, dislikeRoutes);

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/db';
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthRequest } from '../utils/type';
@@ -6,8 +6,6 @@ import dotenv from 'dotenv';
 import { generateUniqueCode } from '../utils/generateUniqueCode';
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 export const createChannel = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {

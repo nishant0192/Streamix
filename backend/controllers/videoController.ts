@@ -6,11 +6,9 @@ import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../config/db"
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 const router = express.Router();
 const recordingsDir = path.join(__dirname, '..', 'recordings');
 
@@ -103,8 +101,6 @@ const fetchVideos = async (req: Request, res: Response) => {
                 },
             },
         });
-
-        console.log(videos);
 
         // Format the video data
         const formattedVideos = videos.map((video) => ({

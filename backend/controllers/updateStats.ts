@@ -1,10 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../config/db"
 import dotenv from 'dotenv';
 import { isUserSubscribed } from '../utils/checkSubscription';
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 const convertBigIntPropertiesToString = (video: any) => {
     return {

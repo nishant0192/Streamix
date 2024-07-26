@@ -1,7 +1,8 @@
+"use client"
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, Toaster } from "react-hot-toast";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import useCheckLoggedIn from "@/hooks/useCheckLoggedIn";
 

@@ -1,11 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from "../config/db"
 import dotenv from "dotenv";
 
 dotenv.config();
-
-const prisma = new PrismaClient();
 
 export const getVideoStats = async (req: Request, res: Response, next: NextFunction) => {
     try {

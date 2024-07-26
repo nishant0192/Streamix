@@ -35,7 +35,7 @@ model ChannelStats {
 
 model ChannelSubscribers {
   id                String   @id @default(uuid())
-  channelId         String @unique
+  channelId         String   @unique
   subscriberUserIds String[] @default([])
   createdAt         DateTime @default(now())
   updatedAt         DateTime @default(now()) @updatedAt
@@ -107,7 +107,7 @@ model Users {
 
 model UserStatus {
   userId      String   @id
-  status      String?
+  status      Status?
   lastLoginAt DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
@@ -165,4 +165,9 @@ model VideoSubscribers {
   updatedAt         DateTime @default(now()) @updatedAt
   Video             Videos   @relation(fields: [videoId], references: [id], onDelete: Cascade)
   Users             Users[]  @relation("UsersToVideoSubscribers")
+}
+
+enum Status {
+  loggedIn
+  loggedOut
 }

@@ -1,9 +1,11 @@
 "use client";
+
 import React, { Fragment, useState, useEffect } from "react";
-import axios from "axios";
+import { useSelector, useDispatch } from "react-redux";
+import { AppDispatch, RootState } from "../../store";
+import { checkLoggedInStatus } from "../../features/authSlice";
 import {
   BellIcon,
-  XMarkIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
   HomeIcon,
@@ -11,7 +13,6 @@ import {
   UserCircleIcon,
   EllipsisVerticalIcon,
 } from "@heroicons/react/24/outline";
-import Cookies from "js-cookie";
 import SubsIcon from "../../assets/subs.svg";
 import {
   Disclosure,
@@ -22,7 +23,8 @@ import {
   MenuItem,
   MenuItems,
 } from "@headlessui/react";
-import useCheckLoggedIn from "../../hooks/useCheckLoggedIn";
+import { useRouter } from "next/navigation";
+
 type NavigationItem = {
   name: string;
   href: string;
@@ -59,18 +61,23 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function Navbar() {
+const Navbar: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { loading, isLoggedIn, error } = useCheckLoggedIn();
+  const dispatch: AppDispatch = useDispatch();
+  const { loading, isLoggedIn, error } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const router = useRouter();
 
   useEffect(() => {
-    // Handle the logged out state based on error or isLoggedIn
+    dispatch(checkLoggedInStatus());
+  }, [dispatch]);
+
+  useEffect(() => {
     if (error || !isLoggedIn) {
       console.log("User is logged out or error occurred");
-      // Perform any logout related actions
     } else {
       console.log("User is logged in");
-      // Perform any actions for logged in user
     }
   }, [isLoggedIn, error]);
 
@@ -117,12 +124,12 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex items-center">
-                  <button
+                  <a
                     type="button"
                     className="relative rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none"
                   >
                     <BellIcon className="h-6 w-6" aria-hidden="true" />
-                  </button>
+                  </a>
 
                   <Menu as="div" className="relative ml-3">
                     <MenuButton className="relative rounded-full  flex items-center bg-gray-800 text-sm focus:outline-none">
@@ -135,7 +142,7 @@ export default function Navbar() {
                     </MenuButton>
                     {isLoggedIn && (
                       <MenuItems className="absolute right-0 mt-2 w-48 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                        <div className="px-1 py-1">
+                        <div className="px-1 py-1 z-50 relative">
                           <MenuItem>
                             {({ active }) => (
                               <a
@@ -164,15 +171,15 @@ export default function Navbar() {
                           </MenuItem>
                           <MenuItem>
                             {({ active }) => (
-                              <a
-                                href="#"
+                              <button
+                                onClick={() => router.push("/auth/logout")}
                                 className={classNames(
                                   active ? "bg-gray-100" : "",
-                                  "block px-4 py-2 text-sm text-gray-700"
+                                  "block px-4 py-2 text-sm text-gray-700 cursor-pointer w-full text-left"
                                 )}
                               >
                                 Sign out
-                              </a>
+                              </button>
                             )}
                           </MenuItem>
                         </div>
@@ -230,4 +237,6 @@ export default function Navbar() {
       </Disclosure>
     </div>
   );
-}
+};
+
+export default Navbar;
