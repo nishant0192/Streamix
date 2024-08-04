@@ -1,15 +1,21 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import useCheckLoggedIn from "@/hooks/useCheckLoggedIn";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { checkLoggedInStatus } from "../../features/authSlice";
+import toast, { Toaster } from "react-hot-toast";
 
 const SignupForm: React.FC = () => {
+  const dispatch = useDispatch();
   const router = useRouter();
 
-  const { loading: checkLoading, isLoggedIn } = useCheckLoggedIn();
+  const { loading: checkLoading, isLoggedIn } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   const [loading, setLoading] = useState(true);
   const [passwordValid, setPasswordValid] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -21,13 +27,8 @@ const SignupForm: React.FC = () => {
   const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
-    setLoading(checkLoading);
-  }, [checkLoading]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    dispatch(checkLoggedInStatus() as any); // Check login status on component mount
+  }, [dispatch]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -43,6 +44,8 @@ const SignupForm: React.FC = () => {
         clearInterval(countdownTimer);
         clearTimeout(redirectTimer);
       };
+    } else {
+      setLoading(false);
     }
   }, [isLoggedIn, router]);
 
@@ -60,24 +63,20 @@ const SignupForm: React.FC = () => {
     }
 
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`,
         { username, email, password },
         { withCredentials: true }
       );
-
       toast.success("Signup successful!");
       setApiError(null);
       setUsername("");
       setEmail("");
       setPassword("");
-    } catch (error) {
+      dispatch(checkLoggedInStatus() as any); // Trigger a status check after registration
+    } catch (error: any) {
       console.error("Signup error:", error);
-      if (axios.isAxiosError(error)) {
-        setApiError(error.response?.data.message || "Failed to Signup. Please try again.");
-      } else {
-        setApiError("An error occurred. Please try again later.");
-      }
+      setApiError(error.response?.data.message || "Failed to Signup. Please try again.");
       setPassword("");
     }
   };
@@ -117,6 +116,14 @@ const SignupForm: React.FC = () => {
     return "bg-gray-300";
   };
 
+  if (checkLoading || loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
   if (isLoggedIn) {
     return (
       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -149,132 +156,106 @@ const SignupForm: React.FC = () => {
           Signup to your account
         </h2>
       </div>
-      {loading ? (
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <div className="animate-pulse bg-gray-200 rounded-md h-8 mb-4" />
-          <div className="animate-pulse bg-gray-200 rounded-md h-8 mb-4" />
-          <div className="animate-pulse bg-gray-200 rounded-md h-8 mb-4" />
-          <div className="animate-pulse bg-gray-200 rounded-md h-8 mb-4" />
-          <div className="animate-pulse bg-gray-200 rounded-md h-8 mb-4" />
-        </div>
-      ) : (
-        <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" onSubmit={handleRegister}>
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Username
-              </label>
-              <div className="mt-2">
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Email address
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Password
-                </label>
-                <div className="text-sm">
-                  <a
-                    href="#"
-                    className="font-semibold text-indigo-600 hover:text-indigo-500"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
-              </div>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
-                    passwordError ? "border-red-500" : ""
-                  }`}
-                />
-                <div className="mt-2 flex items-center">
-                  <div className="w-full bg-gray-300 rounded-full h-1.5">
-                    <div
-                      className={`h-full rounded-full ${getProgressBarColor(
-                        passwordStrength
-                      )}`}
-                      style={{
-                        width: `${(passwordStrength / 5) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
-                  <div className="ml-2">
-                    <span className="text-xs font-semibold">
-                      Password Strength
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {passwordError && (
-                <p className="mt-2 text-xs text-red-500">{passwordError}</p>
-              )}
-            </div>
-            <div>
-              <button
-                type="submit"
-                className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >
-                Sign in
-              </button>
-              {apiError && (
-                <p className="mt-2 text-xs text-red-500">{apiError}</p>
-              )}
-            </div>
-          </form>
-          <p className="mt-10 text-center text-sm text-gray-500">
-            Not a member?{" "}
-            <a
-              href="#"
-              className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500"
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        <form className="space-y-6" onSubmit={handleRegister}>
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium leading-6 text-gray-900"
             >
-              Start a 14 day free trial
-            </a>
-          </p>
-        </div>
-      )}
+              Username
+            </label>
+            <div className="mt-2">
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium leading-6 text-gray-900"
+            >
+              Email address
+            </label>
+            <div className="mt-2">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Password
+              </label>
+              <div className="text-sm">
+                <a
+                  href="#"
+                  className="font-semibold text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot password?
+                </a>
+              </div>
+            </div>
+            <div className="mt-2">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={handlePasswordChange}
+                className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 ${
+                  passwordError ? "border-red-500" : ""
+                }`}
+              />
+              <div className="mt-2 flex items-center">
+                <div className="w-full bg-gray-300 rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full ${getProgressBarColor(
+                      passwordStrength
+                    )}`}
+                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                  />
+                </div>
+                {passwordError && (
+                  <p className="text-red-500 text-xs mt-1">{passwordError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          {apiError && (
+            <div className="text-red-500 text-xs mt-2">{apiError}</div>
+          )}
+          <div>
+            <button
+              type="submit"
+              className="block w-full rounded-md bg-indigo-600 px-3 py-1.5 text-base font-semibold text-white shadow-sm ring-1 ring-gray-300 hover:bg-indigo-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600"
+            >
+              Sign up
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

@@ -22,8 +22,8 @@ app.use('/recordings', express.static(recordingsDir));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // Use cookie-parser middleware
-app.use(express.static(path.join(__dirname, '../videos')));
+app.use(cookieParser());
+
 const corsOptions = {
     origin: ['http://localhost:3000', 'https://ecdf-49-43-27-140.ngrok-free.app'],
     credentials: true,
@@ -36,18 +36,13 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/user', userStatusRoutes);
 app.use('/api/stream', verifyAccessToken, streamRoutes);
 app.use('/api/channel', verifyAccessToken, channelRoutes);
-app.use('/api/stats', verifyAccessToken, likeRoutes, dislikeRoutes);
-app.use('/api/stats', verifyAccessToken, subscribersRoutes);
-app.use('/api/stats', verifyAccessToken, shareRoutes);
-app.use('/api/stats', verifyAccessToken, commentRoutes);
+app.use('/api/stats', verifyAccessToken, likeRoutes, dislikeRoutes, subscribersRoutes, shareRoutes, commentRoutes);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Internal server error' });
 });
 
-
-
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-})
+});

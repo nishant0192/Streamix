@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
-import cookieParser from 'cookie-parser';
 import { AuthRequest } from '../utils/type';
 
 dotenv.config();
@@ -11,24 +10,22 @@ const prisma = new PrismaClient();
 
 const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        cookieParser()(req, res, () => { });
-
         const refreshToken = req.cookies.refreshToken;
         const accessToken = req.cookies.accessToken;
 
-
-        // Continue with token validation for other routes
-        if (!refreshToken && !accessToken) {
+        // Handle cases with no tokens
+        if (!accessToken && !refreshToken) {
             if (req.originalUrl === '/api/user/status') {
                 return next();
             }
             return res.status(401).json({ message: 'No token provided, authorization denied' });
         }
 
+        // Verify access token
         if (accessToken) {
-            const secretKey = process.env.ACCESS_TOKEN_SECRET as Secret;
+            const accessSecretKey = process.env.ACCESS_TOKEN_SECRET as Secret;
             try {
-                const decodedAccessToken: any = jwt.verify(accessToken, secretKey);
+                const decodedAccessToken: any = jwt.verify(accessToken, accessSecretKey);
                 const user = await prisma.users.findUnique({
                     where: { id: decodedAccessToken.userId },
                 });
@@ -48,10 +45,11 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
             }
         }
 
+        // Verify refresh token
         if (refreshToken) {
-            const secretKey = process.env.REFRESH_TOKEN_SECRET as Secret;
+            const refreshSecretKey = process.env.REFRESH_TOKEN_SECRET as Secret;
             try {
-                const decodedRefreshToken: any = jwt.verify(refreshToken, secretKey);
+                const decodedRefreshToken: any = jwt.verify(refreshToken, refreshSecretKey);
                 const user = await prisma.users.findUnique({
                     where: { id: decodedRefreshToken.userId },
                 });
@@ -68,10 +66,11 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
             }
         }
 
+        // If no token is valid
         return res.status(401).json({ message: 'Token is not valid' });
     } catch (error) {
         console.error('Error in authentication middleware:', error);
-        return res.status(401).json({ message: 'Token is not valid' });
+        return res.status(401).json({ message: 'Authentication error' });
     }
 };
 

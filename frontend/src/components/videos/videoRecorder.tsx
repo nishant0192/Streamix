@@ -1,134 +1,94 @@
-import React, { useState, useRef, useEffect } from "react";
+"use client";
+import React, { useState, useRef } from "react";
 import axios from "axios";
+import RecordRTC from "recordrtc";
 import Cookies from "js-cookie";
 
-interface VideoRecorderProps {
-  fetchRecordedVideos: () => void;
-}
-
 const VideoRecorder: React.FC = () => {
-  const [recording, setRecording] = useState<boolean>(false);
+  const [recording, setRecording] = useState(false);
   const [fileName, setFileName] = useState<string>("");
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<RecordRTC | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = mediaStream;
       }
-      const mediaRecorder = new MediaRecorder(stream, {
+      setStream(mediaStream);
+
+      const recordRTC = new RecordRTC(mediaStream, {
+        type: "video",
         mimeType: "video/mp4",
       });
-      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorderRef.current = recordRTC;
 
-      let chunks: BlobPart[] = [];
-      mediaRecorder.ondataavailable = function (e) {
-        chunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = async function () {
-        const blob = new Blob(chunks, { type: "video/mp4" });
-        const formData = new FormData();
-        formData.append("video", blob, `${fileName}.webm`);
-        formData.append("fileName", fileName);
-        try {
-          const axiosInstance = axios.create({
-            baseURL: `${process.env.NEXT_PUBLIC_BACKEND_URL}`,
-            withCredentials: true,
-          });
-          const authToken = Cookies.get("authToken");
-          const response = await axiosInstance.post(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/record`,
-            formData,
-            {
-              headers: {
-                Authorization: `Bearer ${authToken}`,
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-          const data = response.data;
-          console.log("Upload successful:", data);
-        } catch (error) {
-          console.error("Error uploading video:", error);
-        }
-      };
-
-      mediaRecorder.start();
+      recordRTC.startRecording();
       setRecording(true);
     } catch (error) {
       console.error("Error accessing media devices:", error);
     }
   };
 
-  const stopRecording = () => {
-    if (!mediaRecorderRef.current) {
-      console.error("MediaRecorder not initialized.");
-      return;
+  const stopRecording = async () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stopRecording(async () => {
+        const blob = mediaRecorderRef.current?.getBlob();
+        if (blob) {
+          const formData = new FormData();
+          formData.append("video", blob, `${fileName}.mp4`);
+          formData.append("fileName", fileName);
+
+          try {
+            const authToken = Cookies.get("authToken");
+            const response = await axios.post(
+              `${process.env.NEXT_PUBLIC_BACKEND_URL}/videos/record`,
+              formData,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+                withCredentials: true,
+              }
+            );
+            console.log("Upload successful:", response.data);
+          } catch (error) {
+            console.error("Error uploading video:", error);
+          }
+        }
+      });
+
+      const mediaStream = stream;
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+
+      setRecording(false);
     }
-
-    // Stop the media recorder
-    mediaRecorderRef.current.stop();
-
-    // Stop the media stream
-    const stream = videoRef.current?.srcObject as MediaStream;
-    const tracks = stream.getTracks();
-    tracks.forEach((track) => track.stop());
-
-    // Release the media stream
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
-    setRecording(false);
-  };
-
-  const handleFileNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFileName(e.target.value);
   };
 
   return (
-    <>
-      <div className="video-recorder  mt-4">
-        <label>
-          File Name: <br />
-          <input
-            type="text"
-            value={fileName}
-            className="border-black border-2 !text-black"
-            onChange={handleFileNameChange}
-          />
-        </label>
-        {recording ? (
-          <button
-            onClick={stopRecording}
-            className="bg-black ml-4 p-3 rounded-xl"
-          >
-            Stop Recording
-          </button>
-        ) : (
-          <button
-            onClick={startRecording}
-            className="bg-black ml-4 p-3 rounded-xl"
-          >
-            Start Recording
-          </button>
-        )}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="transform scale-x-[-1]"
-        />
-      </div>
-      <div className="mt-4"></div>
-    </>
+    <div>
+      <input
+        type="text"
+        value={fileName}
+        onChange={(e) => setFileName(e.target.value)}
+        placeholder="File name"
+      />
+      <button onClick={recording ? stopRecording : startRecording}>
+        {recording ? "Stop Recording" : "Start Recording"}
+      </button>
+      <video ref={videoRef} autoPlay playsInline />
+    </div>
   );
 };
 

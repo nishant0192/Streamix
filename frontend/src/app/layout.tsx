@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import ReduxProvider from "@/components/ReduxProvider";
+import { SidebarProvider } from "@/context/SidebarContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,11 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning={true} className={inter.className}>
-        <ReduxProvider>
-          <Navbar />
-          <Toaster position="bottom-left" />
-          {children}
-        </ReduxProvider>
+        <SidebarProvider>
+          <ReduxProvider>
+            <Navbar />
+            <Toaster position="bottom-left" />
+            {children}
+          </ReduxProvider>
+        </SidebarProvider>
       </body>
     </html>
   );

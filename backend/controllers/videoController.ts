@@ -6,26 +6,28 @@ import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-import { prisma } from "../config/db"
+import { prisma } from "../config/db";
 
 dotenv.config();
 const router = express.Router();
 const recordingsDir = path.join(__dirname, '..', 'recordings');
 
+// Setup multer for file storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, recordingsDir);
     },
     filename: (req, file, cb) => {
-        cb(null, file.originalname);
+        cb(null, uuidv4() + path.extname(file.originalname));
     },
 });
 
 const upload = multer({ storage: storage });
 
+// Endpoint for recording videos
 const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        const file: any = req.file;
+        const file = req.file; // multer will put the file in req.file
         const user = req.user;
         const fileName: string = req.body.fileName;
 
@@ -37,8 +39,9 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
         }
 
         const inputPath: string = file.path;
-        const outputPath: string = path.join(recordingsDir, `${fileName}.mp4`);
-        console.log(user.id);
+        const fileId = uuidv4();
+        const outputPath: string = path.join(recordingsDir, `${fileId}.mp4`);
+
         await new Promise<void>((resolve, reject) => {
             ffmpeg(inputPath)
                 .output(outputPath)
@@ -66,8 +69,6 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
         const description = 'Description of the video';
         const videoPrivacy = 'unlisted';
 
-        const fileId = uuidv4();
-
         await prisma.videos.create({
             data: {
                 title: fileName,
@@ -79,13 +80,14 @@ const recordVideos = async (req: AuthRequest, res: Response, next: NextFunction)
             },
         });
 
-        res.json({ videoURL: `${process.env.BACKEND_URL}/recordings/${fileName}.mp4` });
+        res.json({ videoURL: `${process.env.BACKEND_URL}/recordings/${fileId}.mp4` });
     } catch (error: any) {
         console.error('Error handling upload:', error);
         res.status(500).json({ error: 'Server error' });
     }
 };
 
+// Endpoint to fetch video data
 const fetchVideos = async (req: Request, res: Response) => {
     try {
         const videos = await prisma.videos.findMany({
@@ -93,6 +95,7 @@ const fetchVideos = async (req: Request, res: Response) => {
                 id: true,
                 title: true,
                 extension: true,
+                fileId: true,
                 createdAt: true,
                 Channel: {
                     select: {
@@ -102,10 +105,9 @@ const fetchVideos = async (req: Request, res: Response) => {
             },
         });
 
-        // Format the video data
         const formattedVideos = videos.map((video) => ({
             id: video.id,
-            url: `${process.env.BACKEND_API}/recordings/${encodeURIComponent(video.title)}.${video.extension}`,
+            url: `${process.env.BACKEND_API}/recordings/${video.fileId}.${video.extension}`,
             title: video.title,
             channelName: video.Channel?.name,
         }));
@@ -117,6 +119,7 @@ const fetchVideos = async (req: Request, res: Response) => {
     }
 };
 
+// Endpoint to get basic video information
 const videosInfo = async (req: Request, res: Response) => {
     try {
         const videos = await prisma.videos.findMany({
